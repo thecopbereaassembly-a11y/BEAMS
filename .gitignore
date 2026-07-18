@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+
+# Production
+/build
+/dist
+
+# Environment & secrets
+.env
+.env*.local
+.env.production
+
+# Supabase
+supabase/.branches
+supabase/.temp
+**/supabase/.env
+
+# Testing
+/coverage
+/playwright-report
+/test-results
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.pem
+*.tsbuildinfo
+
+# Turbo / caches
+.turbo
+.vercel
