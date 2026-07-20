@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * BEAMS design tokens — see docs/10-design-system.md.
+ * Semantic tokens as HSL triplets (shadcn convention). Brand = CoP deep blue +
+ * gold accent. Components reference SEMANTIC names only, never raw brand values.
+ * Light + dark are token swaps; every surface/state has a dark value.
+ */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 222 76% 40%; /* deep blue */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 33% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --accent: 43 82% 48%; /* gold */
+    --accent-foreground: 222 47% 11%;
+    --muted: 220 20% 96%;
+    --muted-foreground: 220 10% 42%;
+
+    --destructive: 3 66% 49%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 69% 33%;
+    --warning: 35 92% 40%;
+    --info: 214 78% 48%;
+
+    --border: 220 20% 90%;
+    --input: 220 20% 90%;
+    --ring: 222 76% 40%;
+
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 222 40% 8%;
+    --foreground: 220 24% 92%;
+    --card: 222 34% 12%;
+    --card-foreground: 220 24% 92%;
+    --popover: 222 34% 12%;
+    --popover-foreground: 220 24% 92%;
+
+    --primary: 222 76% 55%;
+    --primary-foreground: 222 40% 8%;
+    --secondary: 222 24% 18%;
+    --secondary-foreground: 220 24% 92%;
+    --accent: 43 82% 48%;
+    --accent-foreground: 222 40% 8%;
+    --muted: 222 24% 18%;
+    --muted-foreground: 220 12% 65%;
+
+    --destructive: 3 80% 62%;
+    --destructive-foreground: 222 40% 8%;
+    --success: 152 55% 50%;
+    --warning: 43 82% 55%;
+    --info: 214 90% 68%;
+
+    --border: 222 22% 24%;
+    --input: 222 22% 24%;
+    --ring: 222 76% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Accessibility: honor reduced motion (docs/10 §8) */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
