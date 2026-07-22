@@ -13,6 +13,9 @@ import {
   type MEMBER_STATES,
 } from "@/modules/membership/schemas/member.schema";
 import { deleteMemberAction } from "@/modules/membership/actions/member.actions";
+import { ministriesForMember } from "@/modules/ministries/services/ministry.service";
+import { officesForMember } from "@/modules/leadership/services/leadership.service";
+import { getHomeCell } from "@/modules/home-cells/services/home-cell.service";
 
 export const metadata: Metadata = { title: "Member" };
 
@@ -53,6 +56,17 @@ export default async function MemberProfilePage({
   const member = result.data;
   const status = member.current_status as (typeof MEMBER_STATES)[number];
   const age = ageFrom(member.date_of_birth);
+
+  // Cross-module involvement, each guarded by its own permission (M2).
+  const [ministriesResult, officesResult, homeCell] = await Promise.all([
+    can(ctx, "ministry.read") ? ministriesForMember(ctx, member.id) : null,
+    can(ctx, "leadership.read") ? officesForMember(ctx, member.id) : null,
+    member.home_cell_id && can(ctx, "homecell.read")
+      ? getHomeCell(ctx, member.home_cell_id).then((r) => (r.ok ? r.data : null))
+      : null,
+  ]);
+  const ministries = ministriesResult?.ok ? ministriesResult.data : [];
+  const offices = officesResult?.ok ? officesResult.data : [];
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -141,10 +155,58 @@ export default async function MemberProfilePage({
       </div>
 
       <Card className="mt-5 p-5">
+        <h2 className="text-sm font-semibold">Involvement</h2>
+        <div className="mt-3 space-y-3 text-sm">
+          <div>
+            <p className="text-xs text-muted-foreground">Home cell</p>
+            {homeCell ? (
+              <Link href={`/home-cells/${homeCell.id}`} className="font-medium hover:underline">
+                {homeCell.name}
+              </Link>
+            ) : (
+              <p className="text-muted-foreground">Not assigned to a cell</p>
+            )}
+          </div>
+
+          <div>
+            <p className="text-xs text-muted-foreground">Ministries</p>
+            {ministries.length > 0 ? (
+              <ul className="mt-0.5 flex flex-wrap gap-1.5">
+                {ministries.map((m) => (
+                  <li key={m.id}>
+                    <Link href={`/ministries/${m.id}`}>
+                      <Badge tone="primary">{m.code ?? m.name}</Badge>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted-foreground">No ministries</p>
+            )}
+          </div>
+
+          <div>
+            <p className="text-xs text-muted-foreground">Offices held</p>
+            {offices.length > 0 ? (
+              <ul className="mt-0.5 flex flex-wrap gap-1.5">
+                {offices.map((o, i) => (
+                  <li key={`${o.position_name}-${i}`}>
+                    <Badge>{o.position_name}{o.portfolio ? ` · ${o.portfolio}` : ""}</Badge>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted-foreground">None</p>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      <Card className="mt-5 p-5">
         <h2 className="text-sm font-semibold">Related records</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Family, attendance, giving, care, and documents attach here as those
-          modules land (M2–M8).
+          Attendance, giving, care, and documents attach here as those modules
+          land (M3–M8).
         </p>
         <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
           {["Family", "Attendance", "Giving", "Care", "Prayer", "Documents", "Timeline", "Audit"].map((t) => (
