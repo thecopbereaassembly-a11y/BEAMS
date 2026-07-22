@@ -44,14 +44,14 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Welfare", href: "/welfare", permission: "welfare.read" },
       { label: "Prayer", href: "/prayer-requests", permission: "prayer.read" },
       { label: "Evangelism", href: "/evangelism", permission: "evangelism.read", planned: true },
-      { label: "Events", href: "/events", permission: "event.read", planned: true },
+      { label: "Events", href: "/events", permission: "event.read" },
     ],
   },
   {
     title: "Operations",
     items: [
       { label: "Finance", href: "/finance", permission: "finance.read", planned: true },
-      { label: "Communication", href: "/communication", permission: "communication.read", planned: true },
+      { label: "Communication", href: "/communication", permission: "communication.read" },
       { label: "Documents", href: "/documents", permission: "document.read", planned: true },
       { label: "Assets", href: "/assets", permission: "asset.read", planned: true },
       { label: "Reports", href: "/reports", permission: "report.read" },
