@@ -43,7 +43,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Counselling", href: "/counselling", permission: "counselling.read" },
       { label: "Welfare", href: "/welfare", permission: "welfare.read" },
       { label: "Prayer", href: "/prayer-requests", permission: "prayer.read" },
-      { label: "Evangelism", href: "/evangelism", permission: "evangelism.read", planned: true },
+      { label: "Evangelism", href: "/evangelism", permission: "evangelism.read" },
       { label: "Events", href: "/events", permission: "event.read" },
     ],
   },
@@ -52,8 +52,8 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Finance", href: "/finance", permission: "finance.read" },
       { label: "Communication", href: "/communication", permission: "communication.read" },
-      { label: "Documents", href: "/documents", permission: "document.read", planned: true },
-      { label: "Assets", href: "/assets", permission: "asset.read", planned: true },
+      { label: "Documents", href: "/documents", permission: "document.read" },
+      { label: "Assets", href: "/assets", permission: "asset.read" },
       { label: "Reports", href: "/reports", permission: "report.read" },
     ],
   },
@@ -62,7 +62,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Users", href: "/admin/users", permission: "user.manage", planned: true },
       { label: "Roles & Permissions", href: "/admin/roles", permission: "role.manage", planned: true },
-      { label: "Activity Logs", href: "/activity-logs", permission: "audit.read", planned: true },
+      { label: "Activity Logs", href: "/activity-logs", permission: "audit.read" },
       { label: "Settings", href: "/settings", permission: "settings.read", planned: true },
     ],
   },
