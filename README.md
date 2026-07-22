@@ -15,9 +15,9 @@ Breeze) and architected from day one to scale from a single assembly to hundreds
 against the live database. See [16 — Launch Readiness](./docs/16-launch-readiness.md)
 for what must happen before real member data goes in.
 
-Originally: No production code is written yet. We are producing the
-12 planning artifacts required before implementation begins. See
-[`docs/`](./docs) and the [Decision Log](./docs/decisions/DECISION-LOG.md).
+The design blueprint in [`docs/`](./docs) remains the authoritative record of
+why the system is shaped this way; the [Decision Log](./docs/decisions/DECISION-LOG.md)
+holds the reasoning behind every load-bearing choice.
 
 | Phase | Scope | Status |
 |-------|-------|--------|
@@ -25,7 +25,7 @@ Originally: No production code is written yet. We are producing the
 | **2** | Database schema (114 tables), ERD, RLS policies | ✅ Delivered |
 | **3** | API design, auth & security, permission matrix | ✅ Delivered |
 | **4** | UI/UX wireframes, component hierarchy, user flows, state management | ✅ Delivered |
-| **5** | DevOps, deployment, backup & disaster recovery, roadmap | ✅ In review |
+| **5** | DevOps, deployment, backup & disaster recovery, roadmap | ✅ Delivered |
 | **6+** | Production implementation, M0–M10 — see [roadmap](./docs/15-implementation-roadmap.md) | ✅ Complete |
 
 ## Technology Stack
