@@ -22,7 +22,12 @@ export interface NavSection {
 export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Overview",
-    items: [{ label: "Dashboard", href: "/dashboard", permission: "dashboard.view" }],
+    items: [
+      { label: "Dashboard", href: "/dashboard", permission: "dashboard.view" },
+      // No permission: every signed-in user can see their own record. The
+      // self-scope RLS policies keep it to their own row (docs/09 §4).
+      { label: "My profile", href: "/my" },
+    ],
   },
   {
     title: "People",
