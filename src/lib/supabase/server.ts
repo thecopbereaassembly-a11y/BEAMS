@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { requirePublic } from "@/config/env";
+import type { Database } from "@/shared/types/database.types";
 
 /**
  * Server Supabase client — reads the auth session from http-only cookies and is
@@ -10,7 +11,7 @@ import { requirePublic } from "@/config/env";
 export async function createClient() {
   const cookieStore = await cookies();
 
-  return createServerClient(
+  return createServerClient<Database>(
     requirePublic("NEXT_PUBLIC_SUPABASE_URL"),
     requirePublic("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
     {

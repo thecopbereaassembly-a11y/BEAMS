@@ -15,11 +15,12 @@
     "db:migrate": "node --env-file=.env.local scripts/migrate.mjs",
     "db:migrate:seed": "node --env-file=.env.local scripts/migrate.mjs --seed",
     "db:status": "node --env-file=.env.local scripts/migrate.mjs --status",
-    "db:types": "supabase gen types typescript --local > src/shared/types/database.types.ts"
+    "db:types": "node --env-file=.env.local scripts/gen-types.mjs",
+    "db:inspect": "node --env-file=.env.local scripts/db-inspect.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
-    "@supabase/ssr": "^0.5.2",
+    "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.47.10",
     "@tanstack/react-query": "^5.62.11",
     "class-variance-authority": "^0.7.1",

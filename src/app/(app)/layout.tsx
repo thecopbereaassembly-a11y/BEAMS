@@ -1,24 +1,37 @@
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
+import { getAuthContext } from "@/lib/auth/context";
+import { createClient } from "@/lib/supabase/server";
+import { AppSidebar } from "@/components/shell/app-sidebar";
+import { TopBar } from "@/components/shell/top-bar";
 
 /**
- * Authenticated app shell (scaffold). The full sidebar + top bar + breadcrumbs +
- * command palette are built in M0 (docs/11 §0, docs/12 §2). This placeholder
- * establishes the route group and layout seam.
+ * Authenticated app shell. Resolves the AuthContext once (React `cache`
+ * de-dupes it for the whole render) and uses it to filter navigation.
  */
-export default function AppLayout({ children }: { children: ReactNode }) {
+export default async function AppLayout({ children }: { children: ReactNode }) {
+  const ctx = await getAuthContext();
+  if (!ctx) redirect("/login");
+
+  const supabase = await createClient();
+
+  const [{ data: profile }, { data: assembly }] = await Promise.all([
+    supabase.from("app_user").select("full_name").eq("id", ctx.userId).maybeSingle(),
+    ctx.assemblyId
+      ? supabase.from("assembly").select("name").eq("id", ctx.assemblyId).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="flex h-14 items-center border-b px-4">
-        <span className="font-semibold">BEAMS</span>
-        <span className="ml-2 text-sm text-muted-foreground">
-          · Berea English Assembly
-        </span>
-      </header>
-      <div className="flex flex-1">
-        <aside className="hidden w-56 border-r p-4 text-sm text-muted-foreground md:block">
-          Navigation (M0)
-        </aside>
-        <main className="flex-1 p-6">{children}</main>
+      <TopBar
+        ctx={ctx}
+        userName={profile?.full_name ?? "User"}
+        assemblyName={assembly?.name ?? "No assembly"}
+      />
+      <div className="flex flex-1 overflow-hidden">
+        <AppSidebar ctx={ctx} />
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   );

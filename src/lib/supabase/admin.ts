@@ -2,6 +2,7 @@ import "server-only";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { requirePublic } from "@/config/env";
 import { serverEnv } from "@/config/env";
+import type { Database } from "@/shared/types/database.types";
 
 /**
  * Service-role Supabase client — BYPASSES RLS. Server-only (the `server-only`
@@ -14,7 +15,7 @@ export function createAdminClient() {
   if (!SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set (server-only).");
   }
-  return createSupabaseClient(
+  return createSupabaseClient<Database>(
     requirePublic("NEXT_PUBLIC_SUPABASE_URL"),
     SUPABASE_SERVICE_ROLE_KEY,
     { auth: { persistSession: false, autoRefreshToken: false } },
