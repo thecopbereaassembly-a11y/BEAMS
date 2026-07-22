@@ -209,6 +209,66 @@ export async function runReport(
       break;
     }
 
+    case "giving": {
+      const [{ data: contributions }, { data: members }, { data: types }, { data: funds }] =
+        await Promise.all([
+          supabase
+            .from("contribution")
+            .select("*")
+            .eq("assembly_id", assemblyId)
+            .is("deleted_at", null)
+            .order("contributed_on", { ascending: false }),
+          supabase
+            .from("member")
+            .select("id, first_name, last_name, preferred_name")
+            .eq("assembly_id", assemblyId),
+          supabase.from("contribution_type").select("id, name").eq("assembly_id", assemblyId),
+          supabase.from("fund").select("id, name").eq("assembly_id", assemblyId),
+        ]);
+
+      const memberById = new Map((members ?? []).map((m) => [m.id, m]));
+      const typeById = new Map((types ?? []).map((t) => [t.id, t.name]));
+      const fundById = new Map((funds ?? []).map((f) => [f.id, f.name]));
+
+      rows = (contributions ?? []).map((c) => {
+        const member = c.member_id ? memberById.get(c.member_id) : null;
+        return {
+          date: date(c.contributed_on),
+          member: c.is_anonymous ? "Anonymous" : member ? displayName(member) : "",
+          type: typeById.get(c.contribution_type_id) ?? "",
+          fund: c.fund_id ? (fundById.get(c.fund_id) ?? "") : "",
+          channel: c.channel,
+          amount: Number(c.amount),
+        };
+      });
+      break;
+    }
+
+    case "expenditure": {
+      const [{ data: spend }, { data: categories }, { data: funds }] = await Promise.all([
+        supabase
+          .from("expenditure")
+          .select("*")
+          .eq("assembly_id", assemblyId)
+          .is("deleted_at", null)
+          .order("spent_on", { ascending: false }),
+        supabase.from("expenditure_category").select("id, name").eq("assembly_id", assemblyId),
+        supabase.from("fund").select("id, name").eq("assembly_id", assemblyId),
+      ]);
+
+      const categoryById = new Map((categories ?? []).map((c) => [c.id, c.name]));
+      const fundById = new Map((funds ?? []).map((f) => [f.id, f.name]));
+
+      rows = (spend ?? []).map((e) => ({
+        date: date(e.spent_on),
+        payee: e.payee ?? "",
+        category: e.category_id ? (categoryById.get(e.category_id) ?? "") : "",
+        fund: e.fund_id ? (fundById.get(e.fund_id) ?? "") : "",
+        amount: Number(e.amount),
+      }));
+      break;
+    }
+
     case "leadership": {
       const { data: appointments } = await supabase
         .from("leadership_appointment")

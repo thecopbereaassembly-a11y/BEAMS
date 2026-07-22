@@ -4925,7 +4925,48 @@ export type Database = {
       };
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      auth_assembly_id: {
+        Args: Record<string, never>;
+        Returns: string;
+      };
+      auth_has_permission: {
+        Args: { perm_key: string };
+        Returns: boolean;
+      };
+      auth_is_super_admin: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
+      auth_member_id: {
+        Args: Record<string, never>;
+        Returns: string;
+      };
+      beams_apply_confidential_rls: {
+        Args: { tbl: string; read_perm: string; write_perm: string };
+        Returns: undefined;
+      };
+      beams_apply_standard_rls: {
+        Args: { tbl: string; write_perm: string };
+        Returns: undefined;
+      };
+      custom_access_token_hook: {
+        Args: { event: Json };
+        Returns: Json;
+      };
+      my_permissions: {
+        Args: Record<string, never>;
+        Returns: { permission_key: string }[];
+      };
+      next_number: {
+        Args: { p_assembly: string; p_scope: string };
+        Returns: string;
+      };
+      switch_assembly: {
+        Args: { target_assembly: string };
+        Returns: undefined;
+      };
+    };
     Enums: {
       asset_condition: "new" | "good" | "fair" | "poor" | "damaged" | "disposed";
       attendance_status: "present" | "absent" | "excused" | "late";

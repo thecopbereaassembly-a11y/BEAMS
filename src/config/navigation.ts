@@ -50,7 +50,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Operations",
     items: [
-      { label: "Finance", href: "/finance", permission: "finance.read", planned: true },
+      { label: "Finance", href: "/finance", permission: "finance.read" },
       { label: "Communication", href: "/communication", permission: "communication.read" },
       { label: "Documents", href: "/documents", permission: "document.read", planned: true },
       { label: "Assets", href: "/assets", permission: "asset.read", planned: true },

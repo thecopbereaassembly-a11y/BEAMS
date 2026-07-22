@@ -85,7 +85,70 @@ const { rows: cols } = await client.query(`
   order by c.table_name, c.ordinal_position
 `);
 
+// Callable functions (RPC). Trigger functions and internals are skipped.
+const { rows: fnRows } = await client.query(`
+  select p.proname as name,
+         pg_get_function_arguments(p.oid) as args,
+         pg_get_function_result(p.oid)    as returns
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.prokind = 'f'
+    and pg_get_function_result(p.oid) not in ('trigger', 'event_trigger')
+    -- exclude functions installed by extensions (pg_trgm, citext, ...)
+    and not exists (
+      select 1 from pg_depend d
+      where d.objid = p.oid and d.deptype = 'e'
+    )
+  order by p.proname
+`);
+
 await client.end();
+
+/** "p_assembly uuid, p_scope text" -> { p_assembly: "string", p_scope: "string" } */
+function parseArgs(args) {
+  if (!args || !args.trim()) return {};
+  return Object.fromEntries(
+    args
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const tokens = part.replace(/\bDEFAULT\b.*$/i, "").trim().split(/\s+/);
+        const argName = tokens.shift() ?? "arg";
+        return [argName, sqlToTs(tokens.join(" "))];
+      })
+      .filter(([name]) => /^[A-Za-z_]\w*$/.test(name)),
+  );
+}
+
+/** Maps a printed SQL type (not a udt_name) to TypeScript. */
+function sqlToTs(sqlType) {
+  const t = sqlType.toLowerCase().replace(/\[\]$/, "");
+  const isArray = sqlType.endsWith("[]");
+  let base = "unknown";
+  if (/^(text|uuid|character varying|varchar|citext|char|name|date|time|timestamp|inet|cidr|bytea)/.test(t)) base = "string";
+  else if (/^(integer|bigint|smallint|numeric|real|double|decimal)/.test(t)) base = "number";
+  else if (/^bool/.test(t)) base = "boolean";
+  else if (/^json/.test(t)) base = "Json";
+  else if (/^void$/.test(t)) base = "undefined";
+  else if (enums.has(t)) base = `Database["public"]["Enums"]["${t}"]`;
+  return isArray ? `${base}[]` : base;
+}
+
+function parseReturns(returns) {
+  const r = returns.trim();
+  const table = r.match(/^TABLE\((.+)\)$/i);
+  if (table) {
+    const fields = parseArgs(table[1]);
+    const body = Object.entries(fields)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join("; ");
+    return `{ ${body} }[]`;
+  }
+  if (/^SETOF\s+/i.test(r)) return `${sqlToTs(r.replace(/^SETOF\s+/i, ""))}[]`;
+  return sqlToTs(r);
+}
 
 function tsType(udt) {
   const isArray = udt.startsWith("_");
@@ -153,7 +216,25 @@ for (const [table, columns] of [...tables].sort(([a], [b]) => a.localeCompare(b)
 
 lines.push(`    };`);
 lines.push(`    Views: { [_ in never]: never };`);
-lines.push(`    Functions: { [_ in never]: never };`);
+if (fnRows.length === 0) {
+  lines.push(`    Functions: { [_ in never]: never };`);
+} else {
+  lines.push(`    Functions: {`);
+  const seen = new Set();
+  for (const fn of fnRows) {
+    if (seen.has(fn.name)) continue; // skip overloads; first wins
+    seen.add(fn.name);
+    const args = parseArgs(fn.args);
+    const argBody = Object.entries(args)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join("; ");
+    lines.push(`      ${fn.name}: {`);
+    lines.push(`        Args: ${argBody ? `{ ${argBody} }` : "Record<string, never>"};`);
+    lines.push(`        Returns: ${parseReturns(fn.returns)};`);
+    lines.push(`      };`);
+  }
+  lines.push(`    };`);
+}
 lines.push(`    Enums: {`);
 for (const [name, labels] of [...enums].sort(([a], [b]) => a.localeCompare(b))) {
   lines.push(`      ${name}: ${labels.map((l) => `"${l}"`).join(" | ")};`);
@@ -184,5 +265,5 @@ lines.push("");
 
 writeFileSync(OUT, lines.join("\n"), "utf8");
 console.log(
-  `✅ Generated ${tables.size} tables + ${enums.size} enums → src/shared/types/database.types.ts`,
+  `✅ Generated ${tables.size} tables + ${enums.size} enums + ${fnRows.length} functions → src/shared/types/database.types.ts`,
 );
