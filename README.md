@@ -11,7 +11,11 @@ Breeze) and architected from day one to scale from a single assembly to hundreds
 
 ## Status
 
-🟡 **Design phase.** No production code is written yet. We are producing the
+🟢 **Implementation complete (M0–M10).** All 24 modules built and verified
+against the live database. See [16 — Launch Readiness](./docs/16-launch-readiness.md)
+for what must happen before real member data goes in.
+
+Originally: No production code is written yet. We are producing the
 12 planning artifacts required before implementation begins. See
 [`docs/`](./docs) and the [Decision Log](./docs/decisions/DECISION-LOG.md).
 
@@ -22,7 +26,7 @@ Breeze) and architected from day one to scale from a single assembly to hundreds
 | **3** | API design, auth & security, permission matrix | ✅ Delivered |
 | **4** | UI/UX wireframes, component hierarchy, user flows, state management | ✅ Delivered |
 | **5** | DevOps, deployment, backup & disaster recovery, roadmap | ✅ In review |
-| **6+** | Production implementation (module by module) — see [roadmap](./docs/15-implementation-roadmap.md) | 🟢 Ready to begin (M0) |
+| **6+** | Production implementation, M0–M10 — see [roadmap](./docs/15-implementation-roadmap.md) | ✅ Complete |
 
 ## Technology Stack
 
@@ -54,6 +58,7 @@ AirtelTigo) finance · Resend email
 - [13 — User Flows & State Management](./docs/13-user-flows-and-state.md)
 - [14 — DevOps, Deployment & Disaster Recovery](./docs/14-devops-deployment-dr.md)
 - [15 — Implementation Roadmap](./docs/15-implementation-roadmap.md)
+- [16 — Launch Readiness](./docs/16-launch-readiness.md)
 - [Decision Log (ADRs)](./docs/decisions/DECISION-LOG.md)
 
 ## Guiding Principles
