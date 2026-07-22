@@ -27,7 +27,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "People",
     items: [
-      { label: "Members", href: "/members", permission: "member.read", planned: true },
+      { label: "Members", href: "/members", permission: "member.read" },
       { label: "Families", href: "/families", permission: "family.read", planned: true },
       { label: "Home Cells", href: "/home-cells", permission: "homecell.read", planned: true },
       { label: "Ministries", href: "/ministries", permission: "ministry.read", planned: true },
