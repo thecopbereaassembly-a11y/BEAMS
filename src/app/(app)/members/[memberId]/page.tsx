@@ -16,6 +16,7 @@ import { deleteMemberAction } from "@/modules/membership/actions/member.actions"
 import { ministriesForMember } from "@/modules/ministries/services/ministry.service";
 import { officesForMember } from "@/modules/leadership/services/leadership.service";
 import { getHomeCell } from "@/modules/home-cells/services/home-cell.service";
+import { memberAttendance } from "@/modules/attendance/services/attendance.service";
 
 export const metadata: Metadata = { title: "Member" };
 
@@ -67,6 +68,11 @@ export default async function MemberProfilePage({
   ]);
   const ministries = ministriesResult?.ok ? ministriesResult.data : [];
   const offices = officesResult?.ok ? officesResult.data : [];
+
+  const attendanceResult = can(ctx, "attendance.read")
+    ? await memberAttendance(ctx, member.id)
+    : null;
+  const attendance = attendanceResult?.ok ? attendanceResult.data : [];
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -200,6 +206,41 @@ export default async function MemberProfilePage({
             )}
           </div>
         </div>
+      </Card>
+
+      <Card className="mt-5 p-5">
+        <h2 className="text-sm font-semibold">Attendance history</h2>
+        {attendance.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">
+            No attendance recorded yet.
+          </p>
+        ) : (
+          <ul className="mt-3 divide-y text-sm">
+            {attendance.map((entry, i) => (
+              <li key={`${entry.date}-${i}`} className="flex items-center justify-between py-2">
+                <span>
+                  {new Date(entry.date).toLocaleDateString("en-GB", {
+                    timeZone: "Africa/Accra",
+                  })}
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {entry.serviceName}
+                  </span>
+                </span>
+                <Badge
+                  tone={
+                    entry.status === "present" || entry.status === "late"
+                      ? "success"
+                      : entry.status === "absent"
+                        ? "warning"
+                        : "neutral"
+                  }
+                >
+                  {entry.status}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
 
       <Card className="mt-5 p-5">

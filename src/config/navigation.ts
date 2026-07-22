@@ -38,7 +38,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Ministry",
     items: [
-      { label: "Attendance", href: "/attendance", permission: "attendance.read", planned: true },
+      { label: "Attendance", href: "/attendance", permission: "attendance.read" },
       { label: "Shepherding", href: "/shepherding", permission: "shepherding.read", planned: true },
       { label: "Counselling", href: "/counselling", permission: "counselling.read", planned: true },
       { label: "Welfare", href: "/welfare", permission: "welfare.read", planned: true },

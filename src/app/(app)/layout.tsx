@@ -4,6 +4,7 @@ import { getAuthContext } from "@/lib/auth/context";
 import { createClient } from "@/lib/supabase/server";
 import { AppSidebar } from "@/components/shell/app-sidebar";
 import { TopBar } from "@/components/shell/top-bar";
+import { ConnectivityBanner } from "@/components/shell/connectivity-banner";
 
 /**
  * Authenticated app shell. Resolves the AuthContext once (React `cache`
@@ -29,6 +30,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         userName={profile?.full_name ?? "User"}
         assemblyName={assembly?.name ?? "No assembly"}
       />
+      <ConnectivityBanner />
       <div className="flex flex-1 overflow-hidden">
         <AppSidebar ctx={ctx} />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
