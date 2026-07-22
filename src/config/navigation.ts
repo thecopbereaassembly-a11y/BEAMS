@@ -54,7 +54,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Communication", href: "/communication", permission: "communication.read", planned: true },
       { label: "Documents", href: "/documents", permission: "document.read", planned: true },
       { label: "Assets", href: "/assets", permission: "asset.read", planned: true },
-      { label: "Reports", href: "/reports", permission: "report.read", planned: true },
+      { label: "Reports", href: "/reports", permission: "report.read" },
     ],
   },
   {

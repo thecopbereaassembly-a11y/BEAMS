@@ -1,102 +1,220 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getAuthContext } from "@/lib/auth/context";
-import { createClient } from "@/lib/supabase/server";
+import { can } from "@/shared/rbac/can";
+import { Card, Badge, Alert } from "@/components/ui/primitives";
+import { buttonVariants } from "@/components/ui/button";
+import { getDashboardData } from "@/modules/dashboard/services/dashboard.service";
+import { AttendanceChart, GrowthChart } from "@/modules/dashboard/components/lazy-charts";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-lg border bg-card p-4">
+function Stat({
+  label,
+  value,
+  hint,
+  href,
+}: {
+  label: string;
+  value: string | number;
+  hint?: string;
+  href?: string;
+}) {
+  const body = (
+    <Card className="h-full p-4 transition-colors hover:border-primary/40">
       <p className="text-sm text-muted-foreground">{label}</p>
       <p className="mt-1.5 text-2xl font-semibold tabular-nums">{value}</p>
-    </div>
+      {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
+    </Card>
+  );
+  return href ? (
+    <Link href={href} className="block">
+      {body}
+    </Link>
+  ) : (
+    body
   );
 }
 
-/**
- * M0 dashboard. Deliberately diagnostic: it proves the full authorization chain
- * (JWT claims → RLS → data) is working before feature modules are built. The
- * real widget dashboard (docs/11 §1) arrives in M4.
- */
 export default async function DashboardPage() {
   const ctx = await getAuthContext();
-  if (!ctx) return null;
+  if (!ctx) redirect("/login");
 
-  const supabase = await createClient();
+  const data = await getDashboardData(ctx);
+  const firstName = ctx.roleKeys[0]?.replace(/_/g, " ") ?? "there";
 
-  // These reads succeed ONLY if the JWT carries assembly_id and RLS allows it.
-  const [members, ministries, cells, services] = await Promise.all([
-    supabase.from("member").select("*", { count: "exact", head: true }),
-    supabase.from("ministry").select("*", { count: "exact", head: true }),
-    supabase.from("home_cell").select("*", { count: "exact", head: true }),
-    supabase.from("service_type").select("*", { count: "exact", head: true }),
-  ]);
-
-  const rlsWorking = ctx.assemblyId !== null && ministries.error === null;
+  const attentionItems = [
+    data.unassignedMembers > 0 && {
+      text: `${data.unassignedMembers} member${data.unassignedMembers === 1 ? "" : "s"} not assigned to a home cell`,
+      href: "/members",
+    },
+    data.cellsWithoutRecentReport > 0 && {
+      text: `${data.cellsWithoutRecentReport} cell${data.cellsWithoutRecentReport === 1 ? "" : "s"} without a report in the last 14 days`,
+      href: "/home-cells",
+    },
+  ].filter(Boolean) as { text: string; href: string }[];
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Foundation milestone (M0). Full widgets arrive in M4.
-      </p>
-
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Stat label="Members" value={members.count ?? 0} />
-        <Stat label="Home Cells" value={cells.count ?? 0} />
-        <Stat label="Ministries" value={ministries.count ?? 0} />
-        <Stat label="Service Types" value={services.count ?? 0} />
+    <div className="mx-auto max-w-6xl">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <p className="mt-1 text-sm capitalize text-muted-foreground">
+          Signed in as {firstName}
+        </p>
       </div>
 
-      <section className="mt-8 rounded-lg border bg-card p-5">
-        <h2 className="text-sm font-semibold">Authorization check</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Confirms JWT claims and Row-Level Security are enforcing correctly.
-        </p>
+      {!ctx.assemblyId && (
+        <div className="mb-5">
+          <Alert>
+            Your account is not linked to an assembly. Ask an administrator to
+            assign you a role.
+          </Alert>
+        </div>
+      )}
 
-        <dl className="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
-          <div className="flex justify-between border-b pb-2">
-            <dt className="text-muted-foreground">Assembly claim</dt>
-            <dd className="font-medium">
-              {ctx.assemblyId ? "present ✓" : "missing ✗"}
-            </dd>
-          </div>
-          <div className="flex justify-between border-b pb-2">
-            <dt className="text-muted-foreground">Roles</dt>
-            <dd className="font-medium">
-              {ctx.roleKeys.length ? ctx.roleKeys.join(", ").replace(/_/g, " ") : "none"}
-            </dd>
-          </div>
-          <div className="flex justify-between border-b pb-2">
-            <dt className="text-muted-foreground">Permissions resolved</dt>
-            <dd className="font-medium tabular-nums">{ctx.permissions.size}</dd>
-          </div>
-          <div className="flex justify-between border-b pb-2">
-            <dt className="text-muted-foreground">Super administrator</dt>
-            <dd className="font-medium">{ctx.isSuperAdmin ? "yes" : "no"}</dd>
-          </div>
-          <div className="flex justify-between border-b pb-2">
-            <dt className="text-muted-foreground">Member record linked</dt>
-            <dd className="font-medium">{ctx.memberId ? "yes ✓" : "no"}</dd>
-          </div>
-          <div className="flex justify-between border-b pb-2">
-            <dt className="text-muted-foreground">RLS data access</dt>
-            <dd
-              className={`font-medium ${rlsWorking ? "text-success" : "text-destructive"}`}
-            >
-              {rlsWorking ? "working ✓" : "blocked ✗"}
-            </dd>
-          </div>
-        </dl>
-
-        {!ctx.assemblyId && (
-          <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            No <code>assembly_id</code> in your token. Enable the Custom Access
-            Token hook in Supabase → Authentication → Hooks, then sign out and
-            back in.
-          </p>
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {can(ctx, "member.read") && (
+          <Stat
+            label="Members"
+            value={data.memberTotal}
+            hint={data.newThisMonth > 0 ? `+${data.newThisMonth} this month` : "No new this month"}
+            href="/members"
+          />
         )}
-      </section>
+        {can(ctx, "attendance.read") && (
+          <Stat
+            label="Avg. attendance"
+            value={data.avgAttendance}
+            hint={
+              data.lastAttendance !== null ? `Last service: ${data.lastAttendance}` : "No sessions yet"
+            }
+            href="/attendance"
+          />
+        )}
+        {can(ctx, "homecell.read") && (
+          <Stat label="Home cells" value={data.cellTotal} href="/home-cells" />
+        )}
+        {can(ctx, "ministry.read") && (
+          <Stat label="Ministries" value={data.ministryTotal} href="/ministries" />
+        )}
+      </div>
+
+      {/* Needs attention */}
+      {attentionItems.length > 0 && (
+        <Card className="mt-5 p-5">
+          <h2 className="text-sm font-semibold">Needs attention</h2>
+          <ul className="mt-2 space-y-1.5">
+            {attentionItems.map((item) => (
+              <li key={item.text} className="flex items-center gap-2 text-sm">
+                <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                <Link href={item.href} className="hover:underline">
+                  {item.text}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {/* Charts */}
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        {can(ctx, "attendance.read") && (
+          <Card className="p-5">
+            <h2 className="text-sm font-semibold">Attendance trend</h2>
+            <p className="mb-2 text-xs text-muted-foreground">Last 8 services</p>
+            <AttendanceChart data={data.attendanceTrend} />
+          </Card>
+        )}
+        {can(ctx, "member.read") && (
+          <Card className="p-5">
+            <h2 className="text-sm font-semibold">Membership growth</h2>
+            <p className="mb-2 text-xs text-muted-foreground">Last 6 months</p>
+            <GrowthChart data={data.growth} />
+          </Card>
+        )}
+      </div>
+
+      {/* Birthdays & anniversaries */}
+      {can(ctx, "member.read") && (
+        <div className="mt-5 grid gap-5 lg:grid-cols-2">
+          <Card className="p-5">
+            <h2 className="text-sm font-semibold">Birthdays this month 🎂</h2>
+            {data.birthdaysThisMonth.length === 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">None this month.</p>
+            ) : (
+              <ul className="mt-3 divide-y text-sm">
+                {data.birthdaysThisMonth.map((b) => (
+                  <li key={b.id} className="flex items-center justify-between py-1.5">
+                    <Link href={`/members/${b.id}`} className="hover:underline">
+                      {b.name}
+                    </Link>
+                    {b.isToday ? (
+                      <Badge tone="success">Today</Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {b.day}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card className="p-5">
+            <h2 className="text-sm font-semibold">Anniversaries this month 💍</h2>
+            {data.anniversariesThisMonth.length === 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">None this month.</p>
+            ) : (
+              <ul className="mt-3 divide-y text-sm">
+                {data.anniversariesThisMonth.map((a) => (
+                  <li key={a.id} className="flex items-center justify-between py-1.5">
+                    <Link href={`/members/${a.id}`} className="hover:underline">
+                      {a.name}
+                    </Link>
+                    {a.isToday ? (
+                      <Badge tone="success">Today</Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {a.day}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* Quick actions */}
+      <Card className="mt-5 p-5">
+        <h2 className="text-sm font-semibold">Quick actions</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {can(ctx, "attendance.write") && (
+            <Link href="/attendance" className={buttonVariants({ size: "sm" })}>
+              Take attendance
+            </Link>
+          )}
+          {can(ctx, "member.write") && (
+            <Link href="/members/new" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Add member
+            </Link>
+          )}
+          {can(ctx, "homecell.write") && (
+            <Link href="/home-cells" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Cell reports
+            </Link>
+          )}
+          {can(ctx, "report.read") && (
+            <Link href="/reports" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Run a report
+            </Link>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }
