@@ -115,7 +115,7 @@ export function ministriesWeek(year: number, month0: number): {
     1: "Women's Ministry", // Tuesday
     2: "Evangelism Ministry", // Wednesday
     3: "Pentecost Men's Ministry", // Thursday
-    4: "District / Area joint service (as arranged)", // Friday
+    4: "Dunamis Fire — district joint service (Central church)", // Friday
     6: "Gospel Sunday", // Sunday
   };
 
@@ -133,12 +133,49 @@ export function ministriesWeek(year: number, month0: number): {
   return { gospelSunday: toISODate(gospel), monday: toISODate(monday), days };
 }
 
+/**
+ * Lord's Supper Week — the week that ends on this month's Lord's Supper Sunday
+ * (its 1st Sunday). Tuesday–Saturday are preparation (the assembly gathers to
+ * pray and prepare); Sunday is the Lord's Supper. Monday of this week is the
+ * month's Home Cell Monday, which is why the week is described as "Tue–Sun".
+ */
+export function lordsSupperWeek(year: number, month0: number): {
+  lordsSupperSunday: string;
+  days: MinistriesDay[];
+} {
+  const sunday = lordsSupperSunday(year, month0);
+
+  const focusByOffset: Record<number, string> = {
+    [-5]: "Lord's Supper preparation (prayer)", // Tuesday
+    [-4]: "Lord's Supper preparation (prayer)", // Wednesday
+    [-3]: "Lord's Supper preparation (prayer)", // Thursday
+    [-2]: "Lord's Supper preparation (prayer)", // Friday
+    [-1]: "Lord's Supper preparation (prayer)", // Saturday
+    [0]: "Lord's Supper Sunday", // Sunday
+  };
+
+  const days: MinistriesDay[] = Object.entries(focusByOffset)
+    .map(([offset, focus]) => {
+      const d = utc(
+        sunday.getUTCFullYear(),
+        sunday.getUTCMonth(),
+        sunday.getUTCDate() + Number(offset),
+      );
+      return { date: toISODate(d), weekday: WEEKDAY_NAMES[d.getUTCDay()] ?? "", focus };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  return { lordsSupperSunday: toISODate(sunday), days };
+}
+
 export interface MonthCalendar {
   year: number;
   month: number; // 0-indexed
   lordsSupperSunday: string; // 1st Sunday this month (previous cycle)
   homeCellMonday: string;
   youthMondays: string[];
+  /** This month's Lord's Supper week (Tue–Sat prep → 1st-Sunday Lord's Supper). */
+  lordsSupperWeek: ReturnType<typeof lordsSupperWeek>;
   ministriesWeek: ReturnType<typeof ministriesWeek>;
   /** The Lord's Supper Sunday that FOLLOWS this month's Gospel Sunday. */
   nextLordsSupperSunday: string;
@@ -155,6 +192,7 @@ export function monthCalendar(year: number, month0: number): MonthCalendar {
     lordsSupperSunday: toISODate(lordsSupperSunday(year, month0)),
     homeCellMonday: toISODate(homeCellMonday(year, month0)),
     youthMondays: youthMondays(year, month0).map(toISODate),
+    lordsSupperWeek: lordsSupperWeek(year, month0),
     ministriesWeek: ministriesWeek(year, month0),
     nextLordsSupperSunday: toISODate(lordsSupperSunday(nextYear, nextMonth)),
   };

@@ -5,6 +5,7 @@ import {
   homeCellMonday,
   youthMondays,
   ministriesWeek,
+  lordsSupperWeek,
   monthCalendar,
   toISODate,
 } from "./cop-calendar";
@@ -43,7 +44,7 @@ describe("July 2026 (hand-verified anchor)", () => {
       { date: "2026-07-21", weekday: "Tuesday", focus: "Women's Ministry" },
       { date: "2026-07-22", weekday: "Wednesday", focus: "Evangelism Ministry" },
       { date: "2026-07-23", weekday: "Thursday", focus: "Pentecost Men's Ministry" },
-      { date: "2026-07-24", weekday: "Friday", focus: "District / Area joint service (as arranged)" },
+      { date: "2026-07-24", weekday: "Friday", focus: "Dunamis Fire — district joint service (Central church)" },
       { date: "2026-07-26", weekday: "Sunday", focus: "Gospel Sunday" },
     ]);
   });
@@ -51,6 +52,29 @@ describe("July 2026 (hand-verified anchor)", () => {
   it("the NEXT Lord's Supper Sunday follows Gospel Sunday by exactly a week", () => {
     // Gospel Sunday 26 Jul → Lord's Supper 2 Aug.
     expect(monthCalendar(2026, JUL).nextLordsSupperSunday).toBe("2026-08-02");
+  });
+});
+
+describe("Lord's Supper Week (Tue–Sat preparation → Sunday)", () => {
+  it("runs Tuesday to Sunday, ending on August's 1st Sunday (2 Aug 2026)", () => {
+    const week = lordsSupperWeek(2026, 7); // August
+    expect(week.lordsSupperSunday).toBe("2026-08-02");
+    expect(week.days.map((d) => d.weekday)).toEqual([
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ]);
+  });
+
+  it("marks Tue–Sat as preparation and Sunday as the Lord's Supper", () => {
+    const week = lordsSupperWeek(2026, 7);
+    const prep = week.days.slice(0, 5);
+    const sunday = week.days[5];
+    expect(prep.every((d) => d.focus === "Lord's Supper preparation (prayer)")).toBe(true);
+    expect(sunday?.focus).toBe("Lord's Supper Sunday");
   });
 });
 

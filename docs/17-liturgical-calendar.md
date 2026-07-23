@@ -28,10 +28,20 @@ computed rather than stored.
 | Tuesday | Women's Ministry |
 | Wednesday | Evangelism Ministry |
 | Thursday | Pentecost Men's Ministry |
-| Friday | District / Area joint service (as arranged) |
+| Friday | **Dunamis Fire** — district joint service at Central church |
 | Sunday | **Gospel Sunday** |
 
 *(Saturday carries no ministry assignment.)*
+
+### Lord's Supper Week (the following week, Tue–Sun)
+
+The week that ends on the next Lord's Supper Sunday. Its Monday is the month's
+Home Cell Monday, so the observance runs **Tuesday–Sunday**:
+
+| Day | Focus |
+|---|---|
+| Tue – Sat | **Lord's Supper preparation** — the assembly gathers to pray and prepare |
+| Sunday | **Lord's Supper Sunday** (1st Sunday of the month) |
 
 ### The hand-off to the next month
 
@@ -50,17 +60,9 @@ exactly 7 days apart.
 covered by 11 unit tests including the July-2026 hand-verified anchor, the client's
 May example, and a full-year invariant check.
 
-## One point awaiting confirmation
-
-The client mentioned the Lord's Supper "week … from Tuesday to Sunday". The
-**Sunday** anchor (1st Sunday of the next month) is implemented and verified.
-Whether there are distinct weekday observances *during* that Lord's Supper week
-(Tue–Sat) is not yet modelled — to be confirmed.
-
 ## Not yet wired in
 
 The calendar engine exists and is tested, but is **not** yet generating Events or
-attendance sessions automatically. Confirm the point above, then decide whether
-to: (a) auto-generate the month's events, (b) show a "this month" widget on the
-dashboard, or (c) leave it as a library other features call. See the open
-question before building UI on top.
+attendance sessions automatically. Options: (a) auto-generate the month's events,
+(b) show a "this month" widget on the dashboard, or (c) leave it as a library
+other features call. Decision pending before building UI on top.
