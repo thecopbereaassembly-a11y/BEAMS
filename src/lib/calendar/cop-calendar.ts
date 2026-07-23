@@ -126,7 +126,7 @@ export function ministriesWeek(year: number, month0: number): {
         monday.getUTCMonth(),
         monday.getUTCDate() + Number(offset),
       );
-      return { date: toISODate(d), weekday: WEEKDAY_NAMES[d.getUTCDay()], focus };
+      return { date: toISODate(d), weekday: WEEKDAY_NAMES[d.getUTCDay()] ?? "", focus };
     })
     .sort((a, b) => a.date.localeCompare(b.date));
 
