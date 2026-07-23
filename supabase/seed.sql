@@ -43,10 +43,11 @@ cross join (values
   -- PENSA is a students' movement (schools/tertiary), NOT a local-assembly
   -- ministry, so it is intentionally absent here.
   ('Pentecost Men''s Ministry', 'PEMEM', 'movement'),
-  ('Pentecost Women''s Movement', 'PEWOMOM', 'movement'),
+  ('Women''s Ministry', 'WOMEN', 'movement'),
   ('Youth Ministry', 'YOUTH', 'ministry'),
   ('Children''s Ministry', 'CHILDREN', 'ministry'),
   ('Evangelism Ministry', 'EVANGELISM', 'ministry')
+  -- More ministries can be added any time in-app (Ministries → Add ministry).
 ) as m(name, code, category)
 where a.slug = 'berea-english'
 on conflict (assembly_id, name) do nothing;
