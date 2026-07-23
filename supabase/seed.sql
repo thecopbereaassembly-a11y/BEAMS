@@ -40,10 +40,11 @@ insert into ministry (assembly_id, name, code, category)
 select a.id, m.name, m.code, m.category
 from assembly a
 cross join (values
+  -- PENSA is a students' movement (schools/tertiary), NOT a local-assembly
+  -- ministry, so it is intentionally absent here.
   ('Pentecost Men''s Ministry', 'PEMEM', 'movement'),
   ('Pentecost Women''s Movement', 'PEWOMOM', 'movement'),
   ('Youth Ministry', 'YOUTH', 'ministry'),
-  ('Pentecost Students & Associates', 'PENSA', 'ministry'),
   ('Children''s Ministry', 'CHILDREN', 'ministry'),
   ('Evangelism Ministry', 'EVANGELISM', 'ministry')
 ) as m(name, code, category)
@@ -51,14 +52,16 @@ where a.slug = 'berea-english'
 on conflict (assembly_id, name) do nothing;
 
 -- ---- Standard service types --------------------------------------------------
+-- Only Sunday is known. The other days are left NULL rather than guessed —
+-- set them in Settings once Berea's real weekly schedule is confirmed.
 insert into service_type (assembly_id, name, cadence, default_day)
 select a.id, s.name, s.cadence, s.day
 from assembly a
 cross join (values
   ('Sunday Service', 'weekly', 'Sunday'),
-  ('Midweek Service', 'weekly', 'Wednesday'),
-  ('Prayer Meeting', 'weekly', 'Friday'),
-  ('Home Cell Meeting', 'weekly', 'Wednesday')
+  ('Midweek Service', 'weekly', null),
+  ('Prayer Meeting', 'weekly', null),
+  ('Home Cell Meeting', 'weekly', null)
 ) as s(name, cadence, day)
 where a.slug = 'berea-english'
 on conflict (assembly_id, name) do nothing;
