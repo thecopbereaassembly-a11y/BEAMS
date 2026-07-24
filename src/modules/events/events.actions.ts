@@ -10,6 +10,7 @@ import {
   register,
   cancelRegistration,
 } from "./events.module";
+import { generateMonthEvents } from "./calendar-generation";
 
 export interface FormState {
   error?: string;
@@ -78,6 +79,37 @@ export async function registerAction(
     };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Could not register." };
+  }
+}
+
+export async function generateMonthEventsAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const ctx = await getAuthContext();
+  if (!ctx) return { error: "Your session has expired." };
+
+  const year = Number(str(formData, "year"));
+  const month = Number(str(formData, "month")); // 0-indexed
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 0 || month > 11) {
+    return { error: "Choose a valid month and year." };
+  }
+
+  try {
+    const result = await generateMonthEvents(ctx, year, month);
+    if (!result.ok) return { error: result.error.message };
+
+    const { created, skipped } = result.data;
+    revalidatePath("/events");
+    return {
+      success:
+        created === 0
+          ? `All ${skipped} events for that month already exist — nothing to add.`
+          : `Added ${created} event${created === 1 ? "" : "s"}${skipped > 0 ? ` (${skipped} already existed)` : ""}.`,
+    };
+  } catch (error) {
+    if (error instanceof ForbiddenError) return { error: "You cannot create events." };
+    return { error: error instanceof Error ? error.message : "Could not generate events." };
   }
 }
 

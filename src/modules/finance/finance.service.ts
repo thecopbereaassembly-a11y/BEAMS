@@ -71,7 +71,16 @@ export async function getFinanceReferenceData(ctx: AuthContext) {
   // Seed the standard CoP contribution types on first use.
   let contributionTypes = types ?? [];
   if (contributionTypes.length === 0) {
-    const defaults = ["Tithe", "Offering", "Thanksgiving", "Welfare", "Project", "Pledge"];
+    // Berea's actual giving categories. More can be added later.
+    const defaults = [
+      "Tithes",
+      "Local Offerings",
+      "Missions Offerings",
+      "Welfare",
+      "Building & Projects",
+      "Ministries Offerings",
+      "Thanksgiving",
+    ];
     const { data: seeded } = await supabase
       .from("contribution_type")
       .insert(defaults.map((name) => ({ assembly_id: ctx.assemblyId as string, name })))

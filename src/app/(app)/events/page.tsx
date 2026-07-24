@@ -6,6 +6,8 @@ import { can } from "@/shared/rbac/can";
 import { Card, Badge, PageHeader, Alert, EmptyState } from "@/components/ui/primitives";
 import { buttonVariants } from "@/components/ui/button";
 import { listEvents } from "@/modules/events/events.module";
+import { GenerateEventsForm } from "@/modules/events/generate-events-form";
+import { generateMonthEventsAction } from "@/modules/events/events.actions";
 
 export const metadata: Metadata = { title: "Events" };
 
@@ -40,6 +42,8 @@ export default async function EventsPage({
   if (!result.ok) return <Alert>{result.error.message}</Alert>;
   const events = result.data;
 
+  const now = new Date();
+
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader
@@ -53,6 +57,23 @@ export default async function EventsPage({
           ) : null
         }
       />
+
+      {can(ctx, "event.write") && (
+        <Card className="mb-5 p-5">
+          <h2 className="text-sm font-semibold">Generate from the church calendar</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Fill a whole month at once — Home Cell, Youth, Ministries Week and the
+            Lord&apos;s Supper week, following Berea&apos;s monthly rhythm.
+          </p>
+          <div className="mt-4">
+            <GenerateEventsForm
+              action={generateMonthEventsAction}
+              currentYear={now.getUTCFullYear()}
+              currentMonth={now.getUTCMonth()}
+            />
+          </div>
+        </Card>
+      )}
 
       <div className="mb-4 flex gap-2">
         {(["upcoming", "past", "all"] as const).map((s) => (

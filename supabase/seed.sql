@@ -53,29 +53,43 @@ where a.slug = 'berea-english'
 on conflict (assembly_id, name) do nothing;
 
 -- ---- Standard service types --------------------------------------------------
--- Only Sunday is known. The other days are left NULL rather than guessed —
--- set them in Settings once Berea's real weekly schedule is confirmed.
-insert into service_type (assembly_id, name, cadence, default_day)
-select a.id, s.name, s.cadence, s.day
+-- Sunday service 07:00–09:30; weekday/evening meetings at 19:00 (Accra = UTC+0).
+-- Weekday DAYS are left NULL: the real rhythm is monthly, not a fixed weekday —
+-- see docs/17-liturgical-calendar.md and the auto-generated events.
+insert into service_type (assembly_id, name, cadence, default_day, default_time)
+select a.id, s.name, s.cadence, s.day, s.time::time
 from assembly a
 cross join (values
-  ('Sunday Service', 'weekly', 'Sunday'),
-  ('Midweek Service', 'weekly', null),
-  ('Prayer Meeting', 'weekly', null),
-  ('Home Cell Meeting', 'weekly', null)
-) as s(name, cadence, day)
+  ('Sunday Service', 'weekly', 'Sunday', '07:00:00'),
+  ('Midweek Service', 'weekly', null, '19:00:00'),
+  ('Prayer Meeting', 'weekly', null, '19:00:00'),
+  ('Home Cell Meeting', 'weekly', null, '19:00:00')
+) as s(name, cadence, day, time)
 where a.slug = 'berea-english'
 on conflict (assembly_id, name) do nothing;
 
--- ---- Baseline funds ----------------------------------------------------------
+-- ---- Funds (money purses) ----------------------------------------------------
 insert into fund (assembly_id, name, code)
 select a.id, f.name, f.code
 from assembly a
 cross join (values
   ('General Fund', 'GEN'),
   ('Missions Fund', 'MIS'),
-  ('Building Fund', 'BLD'),
-  ('Welfare Fund', 'WEL')
+  ('Welfare Fund', 'WEL'),
+  ('Building & Projects Fund', 'BLD'),
+  ('Ministries Fund', 'MIN')
 ) as f(name, code)
+where a.slug = 'berea-english'
+on conflict (assembly_id, name) do nothing;
+
+-- ---- Contribution types (kinds of giving) ------------------------------------
+insert into contribution_type (assembly_id, name)
+select a.id, t.name
+from assembly a
+cross join (values
+  ('Tithes'), ('Local Offerings'), ('Missions Offerings'),
+  ('Welfare'), ('Building & Projects'), ('Ministries Offerings'),
+  ('Thanksgiving')
+) as t(name)
 where a.slug = 'berea-english'
 on conflict (assembly_id, name) do nothing;
