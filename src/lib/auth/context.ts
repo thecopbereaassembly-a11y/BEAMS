@@ -16,13 +16,20 @@ import type { AuthContext } from "@/shared/rbac/can";
 export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // IMPORTANT: read the CLAIMS, not getUser().app_metadata.
+  //
+  // The Custom Access Token hook injects assembly_id / role_keys / etc. into the
+  // JWT. getUser() returns the user's STORED app_metadata (just provider info),
+  // which does NOT contain the hook claims — so reading it left every user with
+  // "No assembly". getClaims() verifies the token and returns its payload, where
+  // the hook claims actually live.
+  const { data: claimsData, error } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims;
 
-  if (!user) return null;
+  if (error || !claims?.sub) return null;
 
-  const meta = (user.app_metadata ?? {}) as {
+  const userId = claims.sub;
+  const meta = (claims.app_metadata ?? {}) as {
     assembly_id?: string | null;
     member_id?: string | null;
     role_keys?: string[];
@@ -35,7 +42,7 @@ export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
   // Super admins hold every permission — no need to query.
   if (isSuperAdmin) {
     return {
-      userId: user.id,
+      userId,
       assemblyId,
       memberId: meta.member_id ?? null,
       roleKeys: meta.role_keys ?? [],
@@ -51,7 +58,7 @@ export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
     const { data: assignments } = await supabase
       .from("user_assembly_role")
       .select("role_id")
-      .eq("app_user_id", user.id)
+      .eq("app_user_id", userId)
       .eq("assembly_id", assemblyId)
       .eq("is_active", true)
       .is("deleted_at", null);
@@ -85,7 +92,7 @@ export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
   }
 
   return {
-    userId: user.id,
+    userId,
     assemblyId,
     memberId: meta.member_id ?? null,
     roleKeys: meta.role_keys ?? [],
