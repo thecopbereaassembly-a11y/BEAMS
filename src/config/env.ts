@@ -5,10 +5,17 @@ import { z } from "zod";
  * server-only vars must never be read from client components.
  * See docs/14-devops-deployment-dr.md §5.
  */
+// A malformed or blank value must NEVER crash the build/import. `.catch()` turns
+// any validation failure (bad URL, empty string) into `undefined`; requirePublic()
+// then throws a CLEAR runtime error only if a genuinely-required var is missing.
+// This is parsed at module load, so it has to be defensive.
+const optionalUrl = z.string().url().optional().catch(undefined);
+const optionalStr = z.string().min(1).optional().catch(undefined);
+
 const publicSchema = z.object({
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
-  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+  NEXT_PUBLIC_SUPABASE_URL: optionalUrl,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: optionalStr,
+  NEXT_PUBLIC_APP_URL: optionalUrl,
 });
 
 export const publicEnv = publicSchema.parse({
