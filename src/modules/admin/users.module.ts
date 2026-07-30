@@ -308,6 +308,47 @@ export async function setUserRoles(
   return ok(true);
 }
 
+/**
+ * Resets a user's password to a fresh temporary one and hands it back to the
+ * administrator to pass on — for someone who has forgotten or lost their
+ * password. The user should change it after signing in. This does not depend
+ * on email delivery, which isn't configured yet.
+ */
+export async function resetUserPassword(
+  ctx: AuthContext,
+  appUserId: string,
+): Promise<Result<{ tempPassword: string; email: string | null }>> {
+  requirePermission(ctx, "user.manage");
+  if (!ctx.assemblyId) return err(AppError.forbidden("No active assembly"));
+
+  const admin = createAdminClient();
+
+  // Confirm the target belongs to this assembly before touching them.
+  const { data: belongs } = await admin
+    .from("user_assembly_role")
+    .select("id")
+    .eq("app_user_id", appUserId)
+    .eq("assembly_id", ctx.assemblyId)
+    .limit(1)
+    .maybeSingle();
+  if (!belongs) return err(AppError.notFound("User not found in this assembly"));
+
+  const { data: profile } = await admin
+    .from("app_user")
+    .select("email")
+    .eq("id", appUserId)
+    .maybeSingle();
+
+  const password = tempPassword();
+  const { error } = await admin.auth.admin.updateUserById(appUserId, {
+    password,
+    email_confirm: true,
+  });
+  if (error) throw new Error(`Could not reset the password: ${error.message}`);
+
+  return ok({ tempPassword: password, email: profile?.email ?? null });
+}
+
 /** Suspend or reactivate a login. An admin cannot lock themselves out. */
 export async function setUserActive(
   ctx: AuthContext,

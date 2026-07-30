@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getAuthContext } from "@/lib/auth/context";
 import { ForbiddenError } from "@/shared/rbac/can";
-import { createUserSchema, createUser, setUserActive, setUserRoles } from "./users.module";
+import {
+  createUserSchema,
+  createUser,
+  setUserActive,
+  setUserRoles,
+  resetUserPassword,
+} from "./users.module";
 
 export interface UserFormState {
   error?: string;
@@ -79,6 +85,32 @@ export async function setUserRolesAction(
       return { error: "You do not have permission to manage users." };
     }
     return { error: error instanceof Error ? error.message : "Could not update roles." };
+  }
+}
+
+export async function resetUserPasswordAction(
+  _prev: UserFormState,
+  formData: FormData,
+): Promise<UserFormState> {
+  const ctx = await getAuthContext();
+  if (!ctx) return { error: "Your session has expired." };
+
+  const appUserId = str(formData, "appUserId");
+  if (!appUserId) return { error: "Missing user." };
+
+  try {
+    const result = await resetUserPassword(ctx, appUserId);
+    if (!result.ok) return { error: result.error.message };
+    return {
+      success: "Password reset. Give the new temporary password below to the user.",
+      tempPassword: result.data.tempPassword,
+      createdEmail: result.data.email ?? undefined,
+    };
+  } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return { error: "You do not have permission to manage users." };
+    }
+    return { error: error instanceof Error ? error.message : "Could not reset the password." };
   }
 }
 

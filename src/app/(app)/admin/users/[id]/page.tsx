@@ -7,7 +7,8 @@ import { Card, Badge, PageHeader, Alert } from "@/components/ui/primitives";
 import { buttonVariants } from "@/components/ui/button";
 import { getUserRoles, listAssignableRoles } from "@/modules/admin/users.module";
 import { EditRolesForm } from "@/modules/admin/edit-roles-form";
-import { setUserRolesAction } from "@/modules/admin/users.actions";
+import { ResetPasswordForm } from "@/modules/admin/reset-password-form";
+import { setUserRolesAction, resetUserPasswordAction } from "@/modules/admin/users.actions";
 
 export const metadata: Metadata = { title: "Edit roles" };
 
@@ -73,6 +74,17 @@ export default async function EditUserRolesPage({
           roles={roles}
           currentKeys={user.roleKeys}
         />
+      </Card>
+
+      <Card className="mt-6 p-5">
+        <h2 className="text-sm font-semibold">Password</h2>
+        <div className="mt-3">
+          <ResetPasswordForm
+            action={resetUserPasswordAction}
+            appUserId={id}
+            email={user.email}
+          />
+        </div>
       </Card>
     </div>
   );
