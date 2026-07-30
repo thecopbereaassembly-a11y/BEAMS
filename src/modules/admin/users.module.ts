@@ -16,7 +16,8 @@ import { AppError, err, ok, type Result } from "@/shared/errors/result";
 export const createUserSchema = z.object({
   full_name: z.string().trim().min(1, "Enter their name").max(120),
   email: z.string().trim().email("Enter a valid email address"),
-  role_key: z.string().trim().min(1, "Choose a role"),
+  // A person can hold several roles at once (e.g. Elder + Ministry Leader).
+  role_keys: z.array(z.string().trim().min(1)).min(1, "Choose at least one role"),
 });
 
 export type CreateUserValues = z.output<typeof createUserSchema>;
@@ -148,13 +149,12 @@ export async function createUser(
     authUserId = created.data.user.id;
   }
 
-  // 2. Role must exist.
-  const { data: role } = await admin
+  // 2. Roles must exist (a person can hold several).
+  const { data: roles } = await admin
     .from("role")
-    .select("id")
-    .eq("key", values.role_key)
-    .maybeSingle();
-  if (!role) return err(new AppError("validation", "That role does not exist."));
+    .select("id, key")
+    .in("key", values.role_keys);
+  if (!roles?.length) return err(new AppError("validation", "None of those roles exist."));
 
   // 3. Link (or create) a member record for this person.
   const parts = values.full_name.trim().split(/\s+/);
@@ -200,21 +200,112 @@ export async function createUser(
     { onConflict: "id" },
   );
 
-  // 5. Role assignment in this assembly.
+  // 5. Role assignments in this assembly (one row per role held).
   const { error: roleErr } = await admin.from("user_assembly_role").upsert(
-    {
+    roles.map((r) => ({
       app_user_id: authUserId,
-      assembly_id: ctx.assemblyId,
-      role_id: role.id,
+      assembly_id: ctx.assemblyId as string,
+      role_id: r.id,
+      is_primary: true, // same assembly on every row; drives active-assembly pick
+      is_active: true,
+      granted_by: ctx.userId,
+    })),
+    { onConflict: "app_user_id,assembly_id,role_id" },
+  );
+  if (roleErr) throw new Error(`Could not assign the roles: ${roleErr.message}`);
+
+  return ok({ tempPassword: password, reused });
+}
+
+/** The role keys a user currently holds (active) in this assembly. */
+export async function getUserRoles(
+  ctx: AuthContext,
+  appUserId: string,
+): Promise<Result<{ fullName: string; email: string | null; isActive: boolean; roleKeys: string[] }>> {
+  requirePermission(ctx, "user.manage");
+  if (!ctx.assemblyId) return err(AppError.forbidden("No active assembly"));
+
+  const admin = createAdminClient();
+  const { data: user } = await admin
+    .from("app_user")
+    .select("full_name, email, is_active")
+    .eq("id", appUserId)
+    .maybeSingle();
+  if (!user) return err(AppError.notFound("User not found"));
+
+  const { data: assignments } = await admin
+    .from("user_assembly_role")
+    .select("role_id")
+    .eq("app_user_id", appUserId)
+    .eq("assembly_id", ctx.assemblyId)
+    .eq("is_active", true);
+
+  const roleIds = (assignments ?? []).map((a) => a.role_id);
+  const { data: roles } = roleIds.length
+    ? await admin.from("role").select("key").in("id", roleIds)
+    : { data: [] };
+
+  return ok({
+    fullName: user.full_name,
+    email: user.email,
+    isActive: user.is_active,
+    roleKeys: (roles ?? []).map((r) => r.key),
+  });
+}
+
+/**
+ * Syncs a user's roles in this assembly to exactly `roleKeys`: activates the
+ * ones listed, deactivates the ones removed. Keeps the many-to-many honest.
+ */
+export async function setUserRoles(
+  ctx: AuthContext,
+  appUserId: string,
+  roleKeys: string[],
+): Promise<Result<true>> {
+  requirePermission(ctx, "user.manage");
+  if (!ctx.assemblyId) return err(AppError.forbidden("No active assembly"));
+  if (roleKeys.length === 0) {
+    return err(new AppError("validation", "A user must keep at least one role."));
+  }
+
+  const admin = createAdminClient();
+
+  const { data: allRoles } = await admin.from("role").select("id, key");
+  const idByKey = new Map((allRoles ?? []).map((r) => [r.key, r.id]));
+  const wantedIds = roleKeys.map((k) => idByKey.get(k)).filter((v): v is string => Boolean(v));
+  if (wantedIds.length === 0) return err(new AppError("validation", "No valid roles selected."));
+
+  // Deactivate roles no longer wanted.
+  const { data: current } = await admin
+    .from("user_assembly_role")
+    .select("id, role_id, is_active")
+    .eq("app_user_id", appUserId)
+    .eq("assembly_id", ctx.assemblyId);
+
+  const wanted = new Set(wantedIds);
+  const toDeactivate = (current ?? []).filter((r) => r.is_active && !wanted.has(r.role_id));
+  if (toDeactivate.length > 0) {
+    await admin
+      .from("user_assembly_role")
+      .update({ is_active: false })
+      .in("id", toDeactivate.map((r) => r.id));
+  }
+
+  // Activate / add the wanted roles.
+  const { error } = await admin.from("user_assembly_role").upsert(
+    wantedIds.map((role_id) => ({
+      app_user_id: appUserId,
+      assembly_id: ctx.assemblyId as string,
+      role_id,
       is_primary: true,
       is_active: true,
       granted_by: ctx.userId,
-    },
+    })),
     { onConflict: "app_user_id,assembly_id,role_id" },
   );
-  if (roleErr) throw new Error(`Could not assign the role: ${roleErr.message}`);
+  if (error) throw new Error(`Could not update roles: ${error.message}`);
 
-  return ok({ tempPassword: password, reused });
+  return ok(true);
 }
 
 /** Suspend or reactivate a login. An admin cannot lock themselves out. */

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getAuthContext } from "@/lib/auth/context";
 import { ForbiddenError } from "@/shared/rbac/can";
-import { createUserSchema, createUser, setUserActive } from "./users.module";
+import { createUserSchema, createUser, setUserActive, setUserRoles } from "./users.module";
 
 export interface UserFormState {
   error?: string;
@@ -30,7 +30,7 @@ export async function createUserAction(
   const parsed = createUserSchema.safeParse({
     full_name: str(formData, "full_name"),
     email: str(formData, "email"),
-    role_key: str(formData, "role_key"),
+    role_keys: formData.getAll("role_keys").filter((v): v is string => typeof v === "string"),
   });
   if (!parsed.success) return { fieldErrors: parsed.error.flatten().fieldErrors };
 
@@ -51,6 +51,34 @@ export async function createUserAction(
       return { error: "You do not have permission to manage users." };
     }
     return { error: error instanceof Error ? error.message : "Could not create the user." };
+  }
+}
+
+export async function setUserRolesAction(
+  _prev: UserFormState,
+  formData: FormData,
+): Promise<UserFormState> {
+  const ctx = await getAuthContext();
+  if (!ctx) return { error: "Your session has expired." };
+
+  const appUserId = str(formData, "appUserId");
+  if (!appUserId) return { error: "Missing user." };
+  const roleKeys = formData.getAll("role_keys").filter((v): v is string => typeof v === "string");
+  if (roleKeys.length === 0) {
+    return { fieldErrors: { role_keys: ["Choose at least one role."] } };
+  }
+
+  try {
+    const result = await setUserRoles(ctx, appUserId, roleKeys);
+    if (!result.ok) return { error: result.error.message };
+    revalidatePath("/admin/users");
+    revalidatePath(`/admin/users/${appUserId}`);
+    return { success: "Roles updated." };
+  } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return { error: "You do not have permission to manage users." };
+    }
+    return { error: error instanceof Error ? error.message : "Could not update roles." };
   }
 }
 

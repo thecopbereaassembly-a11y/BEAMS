@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { Input, Select, Field } from "@/components/ui/field";
+import { Input, Field } from "@/components/ui/field";
 import { Alert, Card } from "@/components/ui/primitives";
 import type { UserFormState } from "./users.actions";
 
@@ -31,21 +31,38 @@ export function AddUserForm({
       <form action={formAction} className="space-y-4" noValidate>
         {state.error && <Alert>{state.error}</Alert>}
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field id="full_name" label="Full name" required error={err("full_name")}>
             <Input name="full_name" autoComplete="off" placeholder="e.g. John Mensah" />
           </Field>
           <Field id="email" label="Email" required error={err("email")}>
             <Input name="email" type="email" autoComplete="off" />
           </Field>
-          <Field id="role_key" label="Role" required error={err("role_key")}>
-            <Select name="role_key" defaultValue="secretary">
-              {roles.map((r) => (
-                <option key={r.key} value={r.key}>{r.name}</option>
-              ))}
-            </Select>
-          </Field>
         </div>
+
+        <Field id="role_keys" label="Roles" required error={err("role_keys")}>
+          <p className="mb-2 text-xs text-muted-foreground">
+            A person may hold several at once — e.g. an Elder who is also a Ministry
+            Leader and Secretary. Their permissions are the union of every role.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {roles.map((r) => (
+              <label
+                key={r.key}
+                className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/50"
+              >
+                <input
+                  type="checkbox"
+                  name="role_keys"
+                  value={r.key}
+                  defaultChecked={r.key === "secretary"}
+                  className="h-4 w-4 rounded border-border accent-primary"
+                />
+                <span>{r.name}</span>
+              </label>
+            ))}
+          </div>
+        </Field>
 
         <Submit />
       </form>

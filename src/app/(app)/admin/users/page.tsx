@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthContext } from "@/lib/auth/context";
 import { can } from "@/shared/rbac/can";
 import { Card, Badge, PageHeader, Alert, EmptyState } from "@/components/ui/primitives";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { listUsers, listAssignableRoles } from "@/modules/admin/users.module";
 import { AddUserForm } from "@/modules/admin/add-user-form";
 import { createUserAction, toggleUserActiveAction } from "@/modules/admin/users.actions";
@@ -95,16 +96,24 @@ export default async function UsersPage() {
                       <Badge tone="warning">Suspended</Badge>
                     )}
                   </td>
-                  <td className="px-4 py-2.5 text-right">
-                    {u.id !== ctx.userId && (
-                      <form action={toggleUserActiveAction}>
-                        <input type="hidden" name="appUserId" value={u.id} />
-                        <input type="hidden" name="active" value={u.is_active ? "false" : "true"} />
-                        <Button type="submit" variant="ghost" size="sm">
-                          {u.is_active ? "Suspend" : "Reactivate"}
-                        </Button>
-                      </form>
-                    )}
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center justify-end gap-1">
+                      <Link
+                        href={`/admin/users/${u.id}`}
+                        className={buttonVariants({ variant: "ghost", size: "sm" })}
+                      >
+                        Edit roles
+                      </Link>
+                      {u.id !== ctx.userId && (
+                        <form action={toggleUserActiveAction}>
+                          <input type="hidden" name="appUserId" value={u.id} />
+                          <input type="hidden" name="active" value={u.is_active ? "false" : "true"} />
+                          <Button type="submit" variant="ghost" size="sm">
+                            {u.is_active ? "Suspend" : "Reactivate"}
+                          </Button>
+                        </form>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
