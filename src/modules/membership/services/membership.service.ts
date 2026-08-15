@@ -111,6 +111,75 @@ export async function createMember(
   return ok(member);
 }
 
+export interface ImportOutcome {
+  inserted: number;
+  skipped: number;
+  skippedDetail: { name: string; reason: string }[];
+}
+
+/**
+ * Bulk-insert already-validated rows (see import.service.parseMemberWorkbook).
+ * Duplicates are SKIPPED rather than errored, so re-running a partly-imported
+ * file is safe: a row is a duplicate if its Member No, phone, or email already
+ * exists in the assembly — or repeats earlier in the same file. Each insert
+ * still writes its status-history row, exactly like a single add.
+ */
+export async function importMembers(
+  ctx: AuthContext,
+  rows: (MemberFormValues & { member_no?: string })[],
+): Promise<Result<ImportOutcome>> {
+  requirePermission(ctx, "member.write");
+  if (!ctx.assemblyId) return err(AppError.forbidden("No active assembly"));
+
+  const existing = await repo.listMemberIdentifiers(ctx.assemblyId);
+  const seenNos = new Set(existing.map((m) => m.member_no?.trim().toLowerCase()).filter(Boolean));
+  const seenPhones = new Set(existing.map((m) => normalizeGhanaPhone(m.primary_phone ?? undefined)).filter(Boolean));
+  const seenEmails = new Set(existing.map((m) => m.primary_email?.trim().toLowerCase()).filter(Boolean));
+
+  const outcome: ImportOutcome = { inserted: 0, skipped: 0, skippedDetail: [] };
+
+  for (const row of rows) {
+    const name = `${row.first_name} ${row.last_name}`.trim();
+    const no = row.member_no?.trim().toLowerCase();
+    const phone = normalizeGhanaPhone(row.primary_phone);
+    const email = row.primary_email?.trim().toLowerCase();
+
+    let reason: string | null = null;
+    if (no && seenNos.has(no)) reason = `Member No "${row.member_no}" already exists`;
+    else if (phone && seenPhones.has(phone)) reason = `Phone already on file`;
+    else if (email && seenEmails.has(email)) reason = `Email already on file`;
+
+    if (reason) {
+      outcome.skipped++;
+      outcome.skippedDetail.push({ name: name || "(unnamed)", reason });
+      continue;
+    }
+
+    const member = await repo.insertMember({
+      ...toRow(row),
+      member_no: row.member_no ?? null,
+      assembly_id: ctx.assemblyId,
+      created_by: ctx.userId,
+      updated_by: ctx.userId,
+    });
+    await repo.insertStatusHistory({
+      assembly_id: ctx.assemblyId,
+      member_id: member.id,
+      status: row.current_status,
+      reason: "Imported from spreadsheet",
+      created_by: ctx.userId,
+    });
+
+    // Reserve identifiers so later rows in the same file can't duplicate them.
+    if (no) seenNos.add(no);
+    if (phone) seenPhones.add(phone);
+    if (email) seenEmails.add(email);
+    outcome.inserted++;
+  }
+
+  return ok(outcome);
+}
+
 export async function updateMember(
   ctx: AuthContext,
   memberId: string,

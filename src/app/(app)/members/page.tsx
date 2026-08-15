@@ -54,9 +54,17 @@ export default async function MembersPage({
         description={`${total} ${total === 1 ? "member" : "members"} in this assembly`}
         actions={
           can(ctx, "member.write") ? (
-            <Link href="/members/new" className={buttonVariants({ size: "sm" })}>
-              Add member
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                href="/members/import"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                Import from Excel
+              </Link>
+              <Link href="/members/new" className={buttonVariants({ size: "sm" })}>
+                Add member
+              </Link>
+            </div>
           ) : null
         }
       />

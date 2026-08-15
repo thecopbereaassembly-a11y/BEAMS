@@ -160,6 +160,21 @@ export async function countMembersByStatus(
   }, {});
 }
 
+/** Existing identifiers in an assembly — used to skip duplicates on import. */
+export async function listMemberIdentifiers(
+  assemblyId: string,
+): Promise<{ member_no: string | null; primary_phone: string | null; primary_email: string | null }[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("member")
+    .select("member_no, primary_phone, primary_email")
+    .eq("assembly_id", assemblyId)
+    .is(SOFT_DELETE_FILTER, null);
+
+  if (error) throw new Error(`Failed to read existing members: ${error.message}`);
+  return data ?? [];
+}
+
 /** Recorded when status changes — history is the source of truth (ADR-007). */
 export async function insertStatusHistory(
   values: TablesInsert<"membership_status_history">,
