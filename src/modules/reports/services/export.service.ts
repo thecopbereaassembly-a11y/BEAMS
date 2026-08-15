@@ -1,6 +1,16 @@
 import "server-only";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import ExcelJS from "exceljs";
 import type { ReportResult } from "./report.service";
+
+/** Load the crest once and reuse it across exports. */
+let logoBufferPromise: Promise<Buffer | null> | null = null;
+function loadLogo(): Promise<Buffer | null> {
+  logoBufferPromise ??= readFile(path.join(process.cwd(), "public", "logo.png"))
+    .catch(() => null);
+  return logoBufferPromise;
+}
 
 /**
  * Report export formats (docs/04 §19). CSV and Excel are generated here; PDF is
@@ -25,6 +35,8 @@ export function toCsv(report: ReportResult): string {
   return `﻿${header}\r\n${body}`;
 }
 
+const NAVY = "FF231A6D"; // CoP Berea navy
+
 export async function toXlsx(report: ReportResult): Promise<Buffer> {
   const { definition, rows } = report;
 
@@ -33,40 +45,63 @@ export async function toXlsx(report: ReportResult): Promise<Buffer> {
   workbook.created = new Date(report.generatedAt);
 
   const sheet = workbook.addWorksheet(definition.name.slice(0, 31));
+  const colCount = definition.columns.length;
 
-  sheet.columns = definition.columns.map((c) => ({
-    header: c.label,
-    key: c.key,
-    width: Math.max(12, Math.min(40, c.label.length + 6)),
-  }));
+  // ── Branded title band (crest + heading), header table below it ────────────
+  const logo = await loadLogo();
+  const headerRowNo = logo ? 4 : 1;
 
-  rows.forEach((row) => {
-    sheet.addRow(
-      Object.fromEntries(definition.columns.map((c) => [c.key, row[c.key] ?? ""])),
+  if (logo) {
+    // exceljs types its buffer against an older Buffer generic than @types/node
+    // 22 emits; the runtime value is correct, only the types differ.
+    const imageId = workbook.addImage(
+      { buffer: logo, extension: "png" } as unknown as Parameters<typeof workbook.addImage>[0],
     );
+    sheet.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 52, height: 52 } });
+
+    const title = sheet.getCell(1, 2);
+    title.value = "The Church of Pentecost · Berea English Assembly";
+    title.font = { bold: true, size: 12, color: { argb: NAVY } };
+    const sub = sheet.getCell(2, 2);
+    sub.value = definition.name;
+    sub.font = { size: 11 };
+    sheet.getRow(1).height = 18;
+    sheet.getRow(2).height = 15;
+    sheet.getRow(3).height = 8;
+  }
+
+  // Column widths.
+  definition.columns.forEach((c, i) => {
+    sheet.getColumn(i + 1).width = Math.max(12, Math.min(40, c.label.length + 6));
   });
 
-  // Header styling + freeze so long registers stay readable.
-  const headerRow = sheet.getRow(1);
+  // Header row.
+  const headerRow = sheet.getRow(headerRowNo);
+  definition.columns.forEach((c, i) => {
+    headerRow.getCell(i + 1).value = c.label;
+  });
   headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
-  headerRow.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FF1740B3" }, // CoP deep blue
-  };
+  headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
   headerRow.alignment = { vertical: "middle" };
   headerRow.height = 20;
-  sheet.views = [{ state: "frozen", ySplit: 1 }];
 
-  definition.columns.forEach((c, i) => {
-    if (c.numeric) {
-      sheet.getColumn(i + 1).alignment = { horizontal: "right" };
-    }
+  // Data rows.
+  rows.forEach((row, r) => {
+    const excelRow = sheet.getRow(headerRowNo + 1 + r);
+    definition.columns.forEach((c, i) => {
+      excelRow.getCell(i + 1).value = row[c.key] ?? "";
+    });
   });
 
+  definition.columns.forEach((c, i) => {
+    if (c.numeric) sheet.getColumn(i + 1).alignment = { horizontal: "right" };
+  });
+
+  // Freeze everything above the data, and filter on the header row.
+  sheet.views = [{ state: "frozen", ySplit: headerRowNo }];
   sheet.autoFilter = {
-    from: { row: 1, column: 1 },
-    to: { row: 1, column: definition.columns.length },
+    from: { row: headerRowNo, column: 1 },
+    to: { row: headerRowNo, column: colCount },
   };
 
   const buffer = await workbook.xlsx.writeBuffer();

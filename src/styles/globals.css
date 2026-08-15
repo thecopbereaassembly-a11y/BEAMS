@@ -17,12 +17,12 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 222 76% 40%; /* deep blue */
+    --primary: 247 61% 26%; /* CoP Berea navy #231A6D */
     --primary-foreground: 0 0% 100%;
     --secondary: 220 33% 96%;
     --secondary-foreground: 222 47% 11%;
-    --accent: 43 82% 48%; /* gold */
-    --accent-foreground: 222 47% 11%;
+    --accent: 52 97% 50%; /* CoP Berea gold #FBD906 */
+    --accent-foreground: 247 47% 12%;
     --muted: 220 20% 96%;
     --muted-foreground: 220 10% 42%;
 
@@ -34,7 +34,7 @@
 
     --border: 220 20% 90%;
     --input: 220 20% 90%;
-    --ring: 222 76% 40%;
+    --ring: 247 60% 45%;
 
     --radius: 0.625rem;
   }
@@ -47,12 +47,12 @@
     --popover: 222 34% 12%;
     --popover-foreground: 220 24% 92%;
 
-    --primary: 222 76% 55%;
-    --primary-foreground: 222 40% 8%;
+    --primary: 247 55% 62%; /* lighter navy for dark surfaces */
+    --primary-foreground: 247 40% 10%;
     --secondary: 222 24% 18%;
     --secondary-foreground: 220 24% 92%;
-    --accent: 43 82% 48%;
-    --accent-foreground: 222 40% 8%;
+    --accent: 52 97% 50%; /* gold */
+    --accent-foreground: 247 40% 10%;
     --muted: 222 24% 18%;
     --muted-foreground: 220 12% 65%;
 
@@ -64,7 +64,7 @@
 
     --border: 222 22% 24%;
     --input: 222 22% 24%;
-    --ring: 222 76% 55%;
+    --ring: 247 55% 62%;
   }
 }
 

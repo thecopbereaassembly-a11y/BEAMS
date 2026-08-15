@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="BEAMS">
-  <rect width="512" height="512" rx="96" fill="#1740b3"/>
-  <path d="M256 96v320M160 176h192" stroke="#e0a615" stroke-width="34" stroke-linecap="round"/>
-  <text x="256" y="470" font-family="system-ui, sans-serif" font-size="72" font-weight="700"
-        fill="#ffffff" text-anchor="middle">BEAMS</text>
-</svg>

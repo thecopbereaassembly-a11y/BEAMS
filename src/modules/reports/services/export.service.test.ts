@@ -80,11 +80,13 @@ describe("toXlsx", () => {
     const sheet = workbook.getWorksheet("Member register");
     expect(sheet).toBeDefined();
 
-    // Row 1 is the header, then the data rows.
-    expect(sheet?.getRow(1).getCell(1).value).toBe("Name");
-    expect(sheet?.getRow(2).getCell(1).value).toBe("Kwame Mensah");
-    expect(sheet?.getRow(3).getCell(3).value).toBe(5);
-    expect(sheet?.rowCount).toBe(3);
+    // A branded title band sits above the table (crest + assembly heading).
+    expect(String(sheet?.getRow(1).getCell(2).value)).toContain("Church of Pentecost");
+    // Header on row 4, then the data rows beneath it.
+    expect(sheet?.getRow(4).getCell(1).value).toBe("Name");
+    expect(sheet?.getRow(5).getCell(1).value).toBe("Kwame Mensah");
+    expect(sheet?.getRow(6).getCell(3).value).toBe(5);
+    expect(sheet?.rowCount).toBe(6);
   });
 
   it("freezes the header row so long registers stay readable", async () => {

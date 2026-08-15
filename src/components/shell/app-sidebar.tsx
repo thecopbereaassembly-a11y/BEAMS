@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { NAV_SECTIONS } from "@/config/navigation";
 import { can, type AuthContext } from "@/shared/rbac/can";
@@ -19,6 +20,21 @@ export function AppSidebar({ ctx }: { ctx: AuthContext }) {
       aria-label="Main navigation"
       className="hidden w-60 shrink-0 overflow-y-auto border-r bg-card/50 p-3 md:block"
     >
+      <Link href="/dashboard" className="mb-5 flex items-center gap-2.5 px-2">
+        <Image
+          src="/logo.png"
+          alt="Berea English Assembly"
+          width={36}
+          height={36}
+          priority
+          className="h-9 w-9"
+        />
+        <span className="flex flex-col leading-tight">
+          <span className="text-sm font-semibold tracking-tight">BEAMS</span>
+          <span className="text-[10px] text-muted-foreground">Berea English Assembly</span>
+        </span>
+      </Link>
+
       {sections.map((section) => (
         <div key={section.title} className="mb-5">
           <p className="px-2 pb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">

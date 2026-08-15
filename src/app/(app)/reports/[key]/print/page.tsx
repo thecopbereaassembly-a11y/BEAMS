@@ -51,15 +51,20 @@ export default async function ReportPrintPage({
     <div className="mx-auto max-w-5xl bg-white p-8 text-black print:p-0">
       <PrintTrigger />
 
-      <header className="mb-6 border-b border-black/20 pb-4">
-        <p className="text-xs uppercase tracking-widest text-black/60">
-          The Church of Pentecost
-        </p>
-        <h1 className="mt-1 text-xl font-bold">{assembly?.name ?? "Assembly"}</h1>
-        <p className="mt-2 text-base font-semibold">{definition.name}</p>
-        <p className="text-xs text-black/60">
-          {rows.length} {rows.length === 1 ? "record" : "records"} · Generated {generated}
-        </p>
+      <header className="mb-6 flex items-start gap-4 border-b border-black/20 pb-4">
+        {/* Plain <img> so the crest renders reliably in the browser print dialog. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="" width={64} height={64} className="h-16 w-16 shrink-0" />
+        <div>
+          <p className="text-xs uppercase tracking-widest text-black/60">
+            The Church of Pentecost
+          </p>
+          <h1 className="mt-1 text-xl font-bold">{assembly?.name ?? "Assembly"}</h1>
+          <p className="mt-2 text-base font-semibold">{definition.name}</p>
+          <p className="text-xs text-black/60">
+            {rows.length} {rows.length === 1 ? "record" : "records"} · Generated {generated}
+          </p>
+        </div>
       </header>
 
       <table className="w-full border-collapse text-[11px]">
