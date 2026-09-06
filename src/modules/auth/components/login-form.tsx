@@ -66,6 +66,15 @@ export function LoginForm({ next }: { next?: string }) {
         )}
       </div>
 
+      <div className="text-right">
+        <a
+          href="/forgot-password"
+          className="text-sm text-primary underline-offset-4 hover:underline"
+        >
+          Forgot password?
+        </a>
+      </div>
+
       {state.error && (
         <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {state.error}

@@ -4,10 +4,12 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { loginSchema } from "../schemas/login.schema";
+import { resetPasswordSchema } from "../schemas/reset-password.schema";
 
 export interface AuthFormState {
   error?: string;
   fieldErrors?: Record<string, string[]>;
+  emailSent?: boolean;
 }
 
 /**
@@ -42,6 +44,26 @@ export async function signIn(
   const next = formData.get("next");
   revalidatePath("/", "layout");
   redirect(typeof next === "string" && next.startsWith("/") ? next : "/dashboard");
+}
+
+/** Send a password recovery email without revealing whether the address exists. */
+export async function requestPasswordReset(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const parsed = resetPasswordSchema.safeParse({ email: formData.get("email") });
+
+  if (!parsed.success) {
+    return { fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  const supabase = await createClient();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3100";
+  await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: `${appUrl}/set-password`,
+  });
+
+  return { emailSent: true };
 }
 
 /** Sign out and return to the login screen. */
