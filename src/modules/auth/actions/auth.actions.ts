@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { loginSchema } from "../schemas/login.schema";
@@ -58,7 +59,15 @@ export async function requestPasswordReset(
   }
 
   const supabase = await createClient();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3100";
+  const requestHeaders = await headers();
+  const forwardedProto = requestHeaders.get("x-forwarded-proto") ?? "https";
+  const forwardedHost =
+    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const requestOrigin = forwardedHost
+    ? `${forwardedProto}://${forwardedHost}`
+    : undefined;
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? requestOrigin ?? "http://localhost:3100";
   await supabase.auth.resetPasswordForEmail(parsed.data.email, {
     redirectTo: `${appUrl}/set-password`,
   });
